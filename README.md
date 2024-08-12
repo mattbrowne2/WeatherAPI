@@ -96,3 +96,8 @@ pytest
 ```
 
 While the application is running.
+
+### Thoughts & What didn't work
+
+* I thoroughly enjoyed this task - it was a beneficial opportunity to refamiliarise myself the FastAPI library having only used Flask for over a year.
+* I initially tried to use the OneCall API plus the Geocoder API before realising these were pay-walled. Switching to the simple weather API was luckily very swift.
