@@ -60,7 +60,7 @@ Returns the following weather data for the selected city and day provided:
 ```http
 GET /weather/{city_name}/{DD/MM/YYYY}
 ```
-Returns details for a specific user with the given user_id:
+Returns data for a specific City and Date:
 
 ```console
 curl http://127.0.0.1:8000/weather/london/12-08-2024 -H "Accept: application/json"
