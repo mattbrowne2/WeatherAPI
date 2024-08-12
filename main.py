@@ -1,64 +1,88 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import User
-from app.schema import UserCreate, UserUpdate
+from app.database import get_db, Base, engine
+from app.models import Weather
+from app.schema import WeatherBase, WeatherResponse
 import requests
 from datetime import datetime
-from . import models, schema, database
+from contextlib import asynccontextmanager
 
 
-app = FastAPI()
+
 
 API_KEY = '2c192805e2247d175f009a452f6d75c5'
 
-BASE_URL = 'https://api.openweathermap.org/data/3.0/onecall'
+BASE_URL = 'https://api.openweathermap.org/data/2.5/weather'
 
-def get_weather_from_api(city:str):
-    # using OpenWeather's Geocode API, fetch the lon and lat for a city:
-    geocode_url = f'http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={API_KEY}'
-    geocode_response = requests.get(geocode_url).json()
-    if not geocode_response:
-        raise HTTPException(status_code=404, detail="City Provided Not Found")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Shutdown Logic
+    Base.metadata.drop_all(bind=engine)
     
-    lat = geocode_response[0]["lat"]
-    lon = geocode_response[0]["lon"]
-    
-    weather_url = f"{BASE_URL}?lat={lat}&lon={lon}&exclude=hourly,minutely,current&appid={API_KEY}&units=metric"
-    weather_response = requests.get(weather_url).json()
-    return weather_response
+app = FastAPI(lifespan=lifespan)
 
-def get_weather_data(city:str, date:datetime, db:Session):
-    # check if data has already been cached:
+async def get_weather_from_api(city:str) -> dict:
     
-    weather = db.query(models.Weather).filter(models.Weather.city == city, models.Weather.date == date.date()).first()
-    if weather:
-        return weather
+    params = {
+        'q': city,
+        'appid': API_KEY,
+        'units': 'metric'
+    }
     
-    # fetch data from OpenWeather API if not cached:
-    
-    weather_response = get_weather_from_api(city)
-    
-    day_data = next((day for day in weather_response['daily'] if datetime.fromtimestamp(day['dt']).date() == date.date()), None)
-    
-    if not day_data:
-        raise HTTPException(status_code=404, detail="No data for the given date")  
+    response = requests.get(BASE_URL, params=params)
+    print(response)
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Error fetching data from openweather API")
+    return response.json()
 
-    min_temp = day_data["temp"]["min"]
-    max_temp = day_data['temp']['max']
+
+@app.get("/weather/{city}/{specific_date}")
+async def get_weather(city: str, specific_date: str, db: Session = Depends(get_db)):
+    # Convert date string to datetime object
+    try:
+        date_obj = datetime.strptime(specific_date, "%d-%m-%Y").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Date format should be DD-MM-YYYY")
+
+    # Check if data is already stored in cache
+    cached_weather = db.query(Weather).filter(
+        Weather.city == city,
+        Weather.date == date_obj
+    ).first()
+
+    if cached_weather:
+        print("using cached weather")
+        return cached_weather
+
+    # Fetch weather data from OpenWeather API
+    weather_data = (await get_weather_from_api(city))
+
+    # Extract data from response
+    min_temp = weather_data["main"]["temp_min"]
+    max_temp = weather_data["main"]["temp_max"]
     avg_temp = (min_temp + max_temp) / 2
-    humidity = day_data['humidity']
-    
-    weather = models.Weather(city=city, date=date.date(), min_temp=min_temp, max_temp=max_temp, avg_temp=avg_temp, humidity=humidity)
+    humidity = weather_data["main"]["humidity"]
+
+    # Cache data in db
+    weather = Weather(
+        city=city,
+        date=date_obj,
+        min_temp=min_temp,
+        max_temp=max_temp,
+        avg_temp=avg_temp,
+        humidity=humidity
+    )
     db.add(weather)
     db.commit()
     db.refresh(weather)
-    return weather
 
-@app.get("/weather/{city}/{date}", response_model=schema.WeatherResponse)
-def read_weather(city:str, date:str, db: Session = Depends(database.get_db)):
-    date_obj = datetime.strftime(date, '%Y%m-%d')
-    weather = get_weather_data(city, date_obj, db)
-    return weather
-
-
+    return WeatherResponse(
+        city=weather.city,
+        date=weather.date,
+        min_temp=weather.min_temp,
+        max_temp=weather.max_temp,
+        avg_temp=weather.avg_temp,
+        humidity=weather.humidity
+    )

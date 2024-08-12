@@ -1,13 +1,16 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-import sqlite3
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 
-DATABASE_URL = "sqlite:///../users.db"
+
+DATABASE_URL = "sqlite:///./cache.db"
 
 engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
 
 def get_db():
     db = SessionLocal()
