@@ -1,21 +1,18 @@
-# Simple FastAPI Py
+# Simple Weather API
 
-## My Awesome FastAPI Project
-
-This is a simple REST API built with Python and FastAPI and SQLAlchemy for CRUD operations (Create, Read, Update, Delete) on users.
-FastAPI is a powerful web framework for building APIs.
+This is a barebones RESTful API serving weather data, leveraging the OpenWeather weather API built using FastAPI. Cache is stored on a local database object.
 
 ## Installation
 
 Clone this repository to your local machine:
 ```bash
-git clone https://github.com/BaseMax/SimpleFastPyAPI
+git clone https://github.com/mattbrowne2/WeatherAPI.git
 ```
 
 Change into the project directory:
 
 ```bash
-cd SimpleFastPyAPI
+cd WeatherAPI
 ```
 
 Install the project dependencies:
@@ -30,134 +27,53 @@ Run the application:
 uvicorn main:app --reload
 ```
 
-The application will start and be available at http://localhost:8000.
+Alternatively, deploy with Docker:
 
-## API Endpoints
+```bash
+docker build -t weatherapi
+```
 
-### Retrieve a list of users:
+Run the container:
+
+```bash
+docker run -d -p 8000:8000 --name weatherapi_container weatherapi
+```
+
+Via either method, the application will start and be available at http://localhost:8000 (or on whatever port listed in Dockerfile)
+
+## API Endpoint
 
 ```http
-GET /users
+GET /weather/{city_name}/{DD-MM-YYYY}
 ```
 
-Returns a list of all users in the system:
+Returns the following weather data for the selected city and day provided:
 
-```console
-curl http://localhost:8000/users/ -H "Accept: application/json"
-```
-Response:
+* Minimum temperature (celsius)
+* Maximum temperature (celcius)
+* Average temperature (celcius)
+* Humidity (g/Kg)
 
-```json
-[
-    {
-        "email": "alice@example.com",
-        "id": 1,
-        "password": "password1",
-        "name": "Alice"
-    },
-    {
-        "email": "bob@example.com",
-        "id": 2,
-        "password": "password2",
-        "name": "Bob"
-    },
-    {
-        "email": "charlie@example.com",
-        "id": 3,
-        "password": "password3",
-        "name": "Charlie"
-    }
-]
-```
 
-### Retrieve details for a specific user:
+### Example API Call:
 
 ```http
-GET /users/{user_id}
+GET /weather/{city_name}/{DD/MM/YYYY}
 ```
 Returns details for a specific user with the given user_id:
 
 ```console
-curl http://localhost:8000/users/1 -H "Accept: application/json"
+curl http://127.0.0.1:8000/weather/london/12-08-2024 -H "Accept: application/json"
 ```
 Response:
 ```json
 {
-    "email": "alice@example.com",
-    "id": 1,
-    "password": "password1",
-    "name": "Alice"
+    "date":"2024-08-12",
+    "max_temp":33.64,
+    "humidity":53.0,
+    "min_temp":29.87,
+    "id":1,
+    "city":"london",
+    "avg_temp":31.755000000000003
 }
 ```
-
-### Add a new user
-
-```http
-POST /users
-```
-
-Adds a new user to the system. The request body should include a JSON object with the following properties:
-
-  - `name` (string, required): the name of the user
-  - `email` (string, required): the email address of the user
-  - `password` (string, required): the password for the user
-
-```console
-curl -X POST http://localhost:8000/users/
-   -H 'Content-Type: application/json'
-   -d '{"name":"Ali","password":"123456", "email": "AliAhmadi@gmail.com"}'
-```
-Response:
-
-```json
-{
-    "email": "AliAhmadi@gmail.com",
-    "password": "123456", 
-    "id": 4, 
-    "name": "Ali"
-}
-```
-
-
-### Update an existing user
-```http
-PUT /users/{user_id}
-```
-
-Updates an existing user with the given user_id. The request body should include a JSON object with the following properties:
-
-  -  `name` (string): the new name for the user
-  -  `email` (string): the new email address for the user
-
-```console
-curl -X PUT http://localhost:8000/users/1
-     -H "Accept: application/json"
-     -d '{"name": "Reza", "email": "reza@yahoo.com"}'
-```
-Response:
-```json
-{"message": "User updated successfully"}
-```
-
-### Delete a user
-
-```http
-DELETE /users/{user_id}
-```
-
-Deletes the user with the given user_id:
-
-```console
-curl -X DELETE http://localhost:8000/2
-```
-
-Response:
-```json
-{"message": "User deleted successfully"}
-```
-
-## License
-
-This project is licensed under the GPL-3.0 License - see the LICENSE file for details.
-
-Copyright 2023, Max Base

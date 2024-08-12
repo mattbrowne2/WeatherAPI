@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from main import app
+from WeatherAPI.main import app
 from app.schema import WeatherResponse
 
 client = TestClient(app)

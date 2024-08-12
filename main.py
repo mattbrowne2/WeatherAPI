@@ -20,8 +20,10 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown Logic
     Base.metadata.drop_all(bind=engine)
-    
+
+
 app = FastAPI(lifespan=lifespan)
+
 
 async def get_weather_from_api(city:str) -> dict:
     
@@ -53,7 +55,7 @@ async def get_weather(city: str, specific_date: str, db: Session = Depends(get_d
     ).first()
 
     if cached_weather:
-        print("using cached weather")
+        print("using cached weather") # print statement to check if cache is being loaded
         return cached_weather
 
     # Fetch weather data from OpenWeather API
