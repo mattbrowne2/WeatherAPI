@@ -77,3 +77,22 @@ Response:
     "avg_temp":31.755000000000003
 }
 ```
+
+## Pytests
+
+The following tests included within /tests/test_main.py/:
+
+* test_get_weather_valid_city()
+    > Validates entered City is valid using Data Object in schema.py
+* test_get_weather_invalid_city()
+    > Asserts a status code of 404 for an invalid city in API call
+* test_get_weather_invalid_date()
+    > Asserts a status code of 400 with an invalid date in API call
+
+To run the tests simply change to the WeatherAPI dir and call:
+
+```bash
+pytest
+```
+
+While the application is running.
